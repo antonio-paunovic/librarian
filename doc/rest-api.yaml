@@ -1,0 +1,116 @@
+swagger: "2.0"
+info:
+  description: REST API used by the Librarian for retrieval information on books and collections of books.
+paths:
+  /books:
+    get:
+      description: Get list of existing books.
+      responses:
+        '200':
+          description: A JSON array of books.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        default:
+          description: Unexpected error
+    put:
+      description: Create a book or update an existing one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isbn:
+                  type:
+                    type: int
+                    example: 1593272200
+                title:
+                  type: string
+                  example: 'The Linux Programming Interface: A Linux and UNIX System Programming Handbook'
+                author:
+                  type: string
+                  example: 'Michael Kerrisk'
+                genre:
+                  type: string
+                  example: 'Programming manual'
+                published:
+                  type: string
+                  format: date
+                  example: '2023-04-24'
+      responses:
+        '201':
+          description: Updated book entry
+        '400':
+          description: Bad request.
+        '5XX':
+          description: Unexpected error.
+
+  /books/{isbn}:
+    get:
+      description: Get book by isbn.
+      responses:
+        '200':
+          description: A JSON object representing a book.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isbn:
+                    type: int
+                    example: 1593272200
+                  title:
+                    type: string
+                    example: 'The Linux Programming Interface: A Linux and UNIX System Programming Handbook'
+                  genre:
+                    type: string
+                    example: 'Programming manual'
+                  published:
+                    type: string
+                    format: date
+                    example: '2023-04-24'
+        '400':
+          description: Bad request.
+        '5XX':
+          description: Unexpected error.
+
+  /collections:
+    get:
+      description: Get list of existing collections.
+      responses:
+        '200':
+          description: A JSON array of collections.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        default:
+          description: Unexpected error
+    put:
+      description: Create a collection or update an existing one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                isbn:
+                  type: int
+                  example: 1593272200
+      responses:
+        '201':
+          description: Updated collection entry
+        '400':
+          description: Bad request.
+        '5XX':
+          description: Unexpected error.
