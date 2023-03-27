@@ -6,14 +6,12 @@ import (
 	"crypto/tls"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/runtime/middleware"
-	"github.com/go-openapi/swag"
 
 	database "librarian/database"
-	"librarian/models"
 	"librarian/restapi/operations"
 	"librarian/restapi/operations/books"
 	"librarian/restapi/operations/collections"
@@ -23,14 +21,6 @@ import (
 
 func configureFlags(api *operations.LibrarianAPI) {
 	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
-}
-
-func createBook(params books.CreateBookParams) error {
-	return database.InsertBook(params.Body)
-}
-
-func getBooks(books *[]*models.Book) (err error) {
-	return database.GetBooks(books)
 }
 
 func configureAPI(api *operations.LibrarianAPI) http.Handler {
@@ -51,43 +41,29 @@ func configureAPI(api *operations.LibrarianAPI) http.Handler {
 
 	api.JSONProducer = runtime.JSONProducer()
 
-	err := database.InitDB()
+	// Initialize database.
+	dbName := os.Getenv("DB_PATH")
+	if len(dbName) == 0 {
+		dbName = "database/librarian.db"
+		log.Printf("Using the default db: %s\b", dbName)
+	}
+	err := database.InitDB(dbName)
 	if err != nil {
-		log.Println("Failed to initialize db", err)
+		log.Printf("Failed to initialize db %s\n", err)
 	}
 
-	api.BooksGetBooksHandler = books.GetBooksHandlerFunc(func(params books.GetBooksParams) middleware.Responder {
-		bs := []*models.Book{}
-		if err := getBooks(&bs); err != nil {
-			return middleware.NotImplemented("Failed to get books")
-		}
+	// Set handlers.
+	api.BooksGetBooksHandler = books.GetBooksHandlerFunc(HandleGetBooks)
+	api.BooksPostBooksHandler = books.PostBooksHandlerFunc(HandlePostBooks)
+	api.BooksGetBooksIsbnHandler = books.GetBooksIsbnHandlerFunc(HandleGetBooksIsbn)
+	api.BooksDeleteBooksIsbnHandler = books.DeleteBooksIsbnHandlerFunc(HandleDeleteBooksIsbn)
+	api.BooksPutBooksIsbnHandler = books.PutBooksIsbnHandlerFunc(HandlePutBooksIsbn)
 
-		return books.NewGetBooksOK().WithPayload(bs)
-	})
-
-	if api.BooksGetBooksIsbnHandler == nil {
-		api.BooksGetBooksIsbnHandler = books.GetBooksIsbnHandlerFunc(func(params books.GetBooksIsbnParams) middleware.Responder {
-			return middleware.NotImplemented("operation books.GetBooksIsbn has not yet been implemented")
-		})
-	}
-	if api.GetCollectionsHandler == nil {
-		api.GetCollectionsHandler = operations.GetCollectionsHandlerFunc(func(params operations.GetCollectionsParams) middleware.Responder {
-			return middleware.NotImplemented("operation operations.GetCollections has not yet been implemented")
-		})
-	}
-
-	api.BooksCreateBookHandler = books.CreateBookHandlerFunc(func(params books.CreateBookParams) middleware.Responder {
-		if err := createBook(params); err != nil {
-			return books.NewCreateBookDefault(500).WithPayload(&models.Error{Code: 500, Message: swag.String(err.Error())})
-		}
-		return books.NewCreateBookOK().WithPayload(params.Body)
-	})
-
-	if api.CollectionsCreateCollectionHandler == nil {
-		api.CollectionsCreateCollectionHandler = collections.CreateCollectionHandlerFunc(func(params collections.CreateCollectionParams) middleware.Responder {
-			return middleware.NotImplemented("operation collections.CreateCollection has not yet been implemented")
-		})
-	}
+	api.CollectionsGetCollectionsHandler = collections.GetCollectionsHandlerFunc(HandleGetCollections)
+	api.CollectionsPostCollectionsHandler = collections.PostCollectionsHandlerFunc(HandlePostCollections)
+	api.CollectionsDeleteCollectionsHandler = collections.DeleteCollectionsHandlerFunc(HandleDeleteCollections)
+	api.CollectionsPutCollectionsHandler = collections.PutCollectionsHandlerFunc(HandlePutCollections)
+	//
 
 	api.PreServerShutdown = func() {}
 
