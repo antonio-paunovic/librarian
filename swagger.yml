@@ -42,8 +42,11 @@ definitions:
         type: string
         example: "19th century tech"
       isbn:
-        type: string
-        example: '1593272200'
+        type: array
+        items:
+          type: string
+          example: '1593272200'
+        description: 'Isbns for books in the collection'
   error:
     type: object
     required:
@@ -60,7 +63,11 @@ paths:
       tags:
         - books
       summary: Find book by isbn
-      operationId: books_list
+      parameters:
+        - name: filter
+          in: query
+          type: string
+          required: false
       responses:
         200:
           description: All books from the library.
@@ -68,11 +75,14 @@ paths:
             type: array
             items:
               $ref: '#/definitions/book'
+        default:
+          description: bad input for book
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - books
       summary: Create a book
-      operationId: create_book
       parameters:
         - name: body
           in: body
@@ -104,13 +114,71 @@ paths:
           description: Book matching the requested isbn
           schema:
             $ref: '#/definitions/book'
+        404:
+          description: Book not found.
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: bad input parametr/missing book
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      summary: Update book by isbn
+      tags:
+        - books
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: "#/definitions/book"
+        - in: path
+          name: isbn
+          type: string
+          required: true
+          description: isbn code
+      responses:
+        200:
+          description: Book matching the requested isbn
+          schema:
+            $ref: '#/definitions/book'
+        default:
+          description: bad input parametr/missing book
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      summary: Delete book by isbn
+      tags:
+        - books
+      parameters:
+        - in: path
+          name: isbn
+          type: string
+          required: true
+          description: isbn code
+      responses:
+        204:
+          description: No content on successful delete
+          schema:
+            $ref: '#/definitions/book'
+        404:
+          description: Book not found.
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: bad input parametr/missing book
           schema:
             $ref: "#/definitions/error"
   /collections:
     get:
-      summary: Find collection by its name
+      tags:
+        - collections
+      summary: Get one or all collections 
+      parameters:
+        - in: query
+          name: name
+          type: string
+          required: false
+          description: Name of collection
       responses:
         200:
           description: All collections from the library.
@@ -118,11 +186,18 @@ paths:
             type: array
             items:
               $ref: '#/definitions/collection'
+        404:
+          description: Collection not found.
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: bad input parameter/missing collection
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - collections
       summary: Create a collection
-      operationId: create_collection
       parameters:
         - name: body
           in: body
@@ -135,5 +210,51 @@ paths:
             $ref: '#/definitions/collection'
         default:
           description: bad input for collection
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      summary: Delete collection by name
+      tags:
+        - collections
+      parameters:
+        - in: query
+          name: name
+          type: string
+          required: true
+          description: Name of collection
+      responses:
+        204:
+          description: No content on successful delete
+          schema:
+            $ref: '#/definitions/collection'
+        default:
+          description: bad input parametr/missing collection
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags:
+        - collections
+      summary: Update collection
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: "#/definitions/collection"
+        - in: query
+          name: name
+          type: string
+          required: true
+          description: Name of collection
+      responses:
+        200:
+          description: Collection by given name.
+          schema:
+            $ref: '#/definitions/collection'
+        404:
+          description: Collection not found.
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: bad input parameter/missing collection
           schema:
             $ref: "#/definitions/error"
